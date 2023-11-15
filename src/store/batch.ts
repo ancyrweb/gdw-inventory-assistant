@@ -1,8 +1,9 @@
 import { createStore } from "zustand";
 
-type Order = {
+export type Order = {
   id: string;
-  productId: string;
+  variationId: number;
+  productId: number;
   name: string;
   quantity: number;
   options: Record<string, string>;

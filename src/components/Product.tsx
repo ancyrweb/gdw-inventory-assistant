@@ -2,6 +2,7 @@
 
 import { Button, Group, Select, Stack, Text, rem } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
 import { useState } from "react";
 import styled from "styled-components";
 import { v4 } from "uuid";
@@ -15,15 +16,18 @@ export const Product: React.FC<{ product: any; debug?: boolean }> = ({
   const store = useStore(batchStore);
   const query = useQuery<Record<string, any>>({
     queryKey: ["product-variations", product.id],
-    queryFn: () =>
-      fetch(`/api/variations?productId=${product.id}`).then((res) =>
-        res.json()
-      ),
+    queryFn: () => {
+      return axios
+        .get(`/api/variations?productId=${product.id}`)
+        .then((response) => {
+          return response.data;
+        });
+    },
   });
 
   const [quantity, setQuantity] = useState(0);
   const [options, setOptions] = useState<any>({});
-  const relevantVariant =
+  const relevantVariation =
     query.data?.find((value: any) => {
       for (const attribute of value.attributes) {
         if (attribute.option !== options[attribute.name]) {
@@ -33,7 +37,7 @@ export const Product: React.FC<{ product: any; debug?: boolean }> = ({
 
       return true;
     }) ?? null;
-  const inStock = relevantVariant?.stock_quantity ?? 0;
+  const inStock = relevantVariation?.stock_quantity ?? 0;
   const image = product.images.length > 0 ? product.images[0] : null;
 
   return (
@@ -61,7 +65,7 @@ export const Product: React.FC<{ product: any; debug?: boolean }> = ({
           />
         ))}
         <Text mt={4}>
-          En stock : {relevantVariant !== null ? inStock : "-"}{" "}
+          En stock : {relevantVariation !== null ? inStock : "-"}{" "}
         </Text>
         <Group justify="space-between" mt={8}>
           <Button
@@ -75,17 +79,18 @@ export const Product: React.FC<{ product: any; debug?: boolean }> = ({
           <Button
             size={"md"}
             onClick={() => setQuantity(quantity + 1)}
-            disabled={relevantVariant === null}
+            disabled={relevantVariation === null}
           >
             +
           </Button>
         </Group>
         <Button
-          disabled={quantity === 0}
+          disabled={quantity === 0 || !relevantVariation}
           onClick={() => {
             store.addOrder({
               id: v4(),
               productId: product.id,
+              variationId: relevantVariation!.id,
               name: product.name,
               quantity,
               options,
