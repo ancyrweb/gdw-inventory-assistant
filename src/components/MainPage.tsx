@@ -10,7 +10,7 @@ export const MainPage: React.FC<{ products: any[] }> = ({ products }) => {
   const store = useStore(batchStore);
 
   return (
-    <View isRightMenuOpen={store.orders.length > 0}>
+    <View $isRightMenuOpen={store.orders.length > 0}>
       <ProductList products={products} />
       {store.orders.length > 0 && (
         <Menu>
@@ -21,8 +21,9 @@ export const MainPage: React.FC<{ products: any[] }> = ({ products }) => {
   );
 };
 
-const View = styled.div<{ isRightMenuOpen: boolean }>`
-  margin-right: ${({ isRightMenuOpen }) => (isRightMenuOpen ? `400px` : `0px`)};
+const View = styled.div<{ $isRightMenuOpen: boolean }>`
+  margin-right: ${({ $isRightMenuOpen }) =>
+    $isRightMenuOpen ? `400px` : `0px`};
 `;
 
 const Menu = styled.div`
