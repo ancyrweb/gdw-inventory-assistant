@@ -1,19 +1,13 @@
-"use client";
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
+import { wooCommerceClient } from "@inventory-assistant/woocommerce/client";
 import { MainPage } from "../../components/MainPage";
 
-const Page: React.FC = () => {
-  const query = useQuery<any>({
-    queryKey: ["products"],
-    queryFn: () => axios.get(`/api/products`).then((response) => response.data),
+const Page: React.FC = async () => {
+  const products = await wooCommerceClient.get("products", {
+    per_page: 100,
+    at: Date.now(),
   });
 
-  if (query.isLoading && !query.data) {
-    return <p>Loading</p>;
-  }
-
-  return <MainPage products={query?.data ?? []} />;
+  return <MainPage products={products.data} />;
 };
 
 export default Page;
