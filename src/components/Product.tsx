@@ -16,13 +16,10 @@ export const Product: React.FC<{ product: any; debug?: boolean }> = ({
   const store = useStore(batchStore);
   const query = useQuery<Record<string, any>>({
     queryKey: ["product-variations", product.id],
-    queryFn: () => {
-      return axios
+    queryFn: () =>
+      axios
         .get(`/api/variations?productId=${product.id}`)
-        .then((response) => {
-          return response.data;
-        });
-    },
+        .then((response) => response.data),
   });
 
   const [quantity, setQuantity] = useState(0);
