@@ -14,6 +14,8 @@ export const metadata: Metadata = {
   description: "Assistant de gestion de stock",
 };
 
+export const fetchCache = "force-no-store";
+
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <html lang="fr">
