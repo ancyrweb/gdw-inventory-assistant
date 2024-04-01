@@ -1,12 +1,11 @@
 "use client";
 
-import { Box, Button, Divider, Stack, Text, Title } from "@mantine/core";
-import { useMutation } from "@tanstack/react-query";
-import axios from "axios";
+import {Box, Button, Divider, Stack, Text, Title} from "@mantine/core";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
 import styled from "styled-components";
-import { useStore } from "zustand";
-import { Order, batchStore } from "../store/batch";
-import { queryClient } from "./QueryProvider";
+import {useStore} from "zustand";
+import {batchStore, Order} from "../store/batch";
+import {adjustInventoryAction} from "@inventory-assistant/shopify/adjust-inventory-action";
 
 export const BatchResume: React.FC = () => {
   async function save() {
@@ -19,6 +18,7 @@ export const BatchResume: React.FC = () => {
     store.clear();
   }
 
+  const queryClient = useQueryClient();
   const store = useStore(batchStore);
   const saveMutation = useMutation<
     any,
@@ -27,56 +27,18 @@ export const BatchResume: React.FC = () => {
       orders: Order[];
     }
   >({
-    onSuccess: () => {
+    onSuccess: async () => {
       store.clear();
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
+      });
     },
     mutationFn: async ({ orders }) => {
-      let record: Record<
-        any,
-        {
-          productId: number;
-          delta: number;
-          stockQuantity: number;
-        }
-      > = {};
-      orders.forEach((order) => {
-        if (!record[order.variationId]) {
-          record[order.variationId] = {
-            productId: order.productId,
-            delta: order.quantity,
-            stockQuantity: 0,
-          };
-        } else {
-          record[order.variationId].delta += order.quantity;
-        }
-      });
-
-      await Promise.all(
-        Object.keys(record).map(async (variationId) => {
-          const productId = record[variationId].productId;
-          const variationQuery = await axios.get(
-            `/api/single-variation?productId=${productId}&variationId=${variationId}`
-          );
-
-          record[variationId].stockQuantity =
-            variationQuery.data.stock_quantity;
-        })
-      );
-
-      const batch = Object.entries(record).map(([variationId, value]) => ({
-        id: variationId,
-        product_id: value.productId,
-        stock_quantity: value.stockQuantity + value.delta,
-      }));
-
-      await axios.post("/api/batch-update-variations", {
-        update: batch,
-      });
-
-      batch.forEach((variation) => {
-        queryClient.invalidateQueries({
-          queryKey: ["product-variations", variation.product_id],
-        });
+      await adjustInventoryAction({
+        adjustments: orders.map((order) => ({
+          inventoryItemId: order.inventoryItemId,
+          delta: order.quantity,
+        })),
       });
     },
   });
@@ -90,7 +52,7 @@ export const BatchResume: React.FC = () => {
             const isLast = index === array.length - 1;
             const variationsToString = Object.entries(order.options)
               .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-              .map(([key, value]) => `${key} ${value}`)
+              .map(([key, value]) => value)
               .join(", ");
 
             return (

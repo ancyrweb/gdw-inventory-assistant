@@ -1,17 +1,28 @@
 "use client";
 
 import styled from "styled-components";
-import { useStore } from "zustand";
-import { batchStore } from "../store/batch";
-import { BatchResume } from "./BatchResume";
-import { ProductList } from "./ProductList";
+import {useStore} from "zustand";
+import {batchStore} from "../store/batch";
+import {BatchResume} from "./BatchResume";
+import {ProductList} from "./ProductList";
+import {useQuery} from "@tanstack/react-query";
+import {fetchProducts} from "@inventory-assistant/shopify/fetch-products";
+import React from "react";
 
 export const MainPage: React.FC<{ products: any[] }> = ({ products }) => {
   const store = useStore(batchStore);
+  const query = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      return fetchProducts();
+    },
+    initialData: products,
+  })
+
 
   return (
     <View $isRightMenuOpen={store.orders.length > 0}>
-      <ProductList products={products} />
+      <ProductList products={query.data} />
       {store.orders.length > 0 && (
         <Menu>
           <BatchResume />

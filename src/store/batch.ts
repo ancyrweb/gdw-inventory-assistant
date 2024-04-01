@@ -2,8 +2,9 @@ import { createStore } from "zustand";
 
 export type Order = {
   id: string;
-  variationId: number;
+  variantId: number;
   productId: number;
+  inventoryItemId: number;
   name: string;
   quantity: number;
   options: Record<string, string>;

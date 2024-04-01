@@ -11,10 +11,6 @@ export const ProductList: React.FC<{ products: any[] }> = ({ products }) => {
   return (
     <View>
       {products
-        .filter(
-          (product) =>
-            product.atum_controlled === true && product.attributes.length > 0
-        )
         .map((product, index) => (
           <Product key={product.id} product={product} debug={index === 3} />
         ))}

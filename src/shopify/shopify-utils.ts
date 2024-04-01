@@ -1,0 +1,1 @@
+export const getVariantName = (variant: any) => `option${variant.position}`

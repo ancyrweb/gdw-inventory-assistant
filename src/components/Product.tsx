@@ -1,62 +1,63 @@
 "use client";
 
-import { Button, Group, Select, Stack, Text, rem } from "@mantine/core";
-import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
-import { useState } from "react";
+import {Button, Group, rem, Select, Stack, Text} from "@mantine/core";
+import {useState} from "react";
 import styled from "styled-components";
-import { v4 } from "uuid";
-import { useStore } from "zustand";
-import { batchStore } from "../store/batch";
+import {v4} from "uuid";
+import {useStore} from "zustand";
+import {batchStore} from "../store/batch";
+import {getVariantName} from "@inventory-assistant/shopify/shopify-utils";
 
+const createVariantKeys = (product: any) => {
+  const obj: any = {};
+  product.options.forEach((option: any) => {
+    obj[getVariantName(option)] = null;
+  });
+
+  return obj;
+}
 export const Product: React.FC<{ product: any; debug?: boolean }> = ({
   product,
   debug,
 }) => {
   const store = useStore(batchStore);
-  const query = useQuery<Record<string, any>>({
-    queryKey: ["product-variations", product.id],
-    queryFn: () =>
-      axios
-        .get(`/api/variations?productId=${product.id}`)
-        .then((response) => response.data),
-  });
 
   const [quantity, setQuantity] = useState(0);
-  const [options, setOptions] = useState<any>({});
-  const relevantVariation =
-    query.data?.find((value: any) => {
-      for (const attribute of value.attributes) {
-        if (attribute.option !== options[attribute.name]) {
-          return false;
-        }
+  const [options, setOptions] = useState<any>(createVariantKeys(product));
+  const relevantVariation: any =  product.variants.find((variant: any) => {
+    const keys = Object.keys(options);
+    for (const key of keys) {
+      if (variant[key] !== options[key]) {
+        return false;
       }
+    }
 
-      return true;
-    }) ?? null;
-  const inStock = relevantVariation?.stock_quantity ?? 0;
+    return true;
+  }) ?? null;
+
+  const inStock = relevantVariation?.inventory_quantity ?? 0;
   const image = product.images.length > 0 ? product.images[0] : null;
 
   return (
     <View>
       {!!image ? (
-        <Image src={image.src} alt={image.name} />
+        <Image src={image.src} alt={"Produit " + product.id} />
       ) : (
         <ImagePlaceholder />
       )}
-      <Title>{product.name}</Title>
+      <Title>{product.title}</Title>
       <Stack gap={4} mt={20}>
-        {product.attributes.map((attribute: any) => (
+        {product.options.map((option: any) => (
           <Select
-            key={attribute.id}
-            placeholder={attribute.name}
-            data={attribute.options}
-            value={options[attribute.name] ?? null}
+            key={option.id}
+            placeholder={option.name}
+            data={option.values}
+            value={options[getVariantName(option)] ?? null}
             clearable
             onChange={(value) => {
               setOptions({
                 ...options,
-                [attribute.name]: value,
+                [getVariantName(option)]: value,
               });
             }}
           />
@@ -87,13 +88,14 @@ export const Product: React.FC<{ product: any; debug?: boolean }> = ({
             store.addOrder({
               id: v4(),
               productId: product.id,
-              variationId: relevantVariation!.id,
-              name: product.name,
+              variantId: relevantVariation!.id,
+              inventoryItemId: relevantVariation!.inventory_item_id,
+              name: product.title,
               quantity,
               options,
             });
 
-            setOptions({});
+            setOptions(createVariantKeys(product));
             setQuantity(0);
           }}
         >
